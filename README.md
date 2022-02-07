@@ -5,3 +5,7 @@ Did you know? That Instant Noodle invented by **Momofuku Ando of Nissin Foods** 
 # Instant Noodles Around The World
 
 The data used in this analysis is **The big list** data from [**The Ramen Rater**](https://www.theramenrater.com/resources-2/the-list/#google_vignette) guide to the world of instant noodle, since 2002. This data consist of all varioes instant noodle around the world, and the rating based on ramen rater preferences not on sales popularity.
+
+# Publication
+
+You can find and read this repository publication by this link [Instant Noodle Analysis](https://rpubs.com/rezasputra/instant_noodle_analysis)
