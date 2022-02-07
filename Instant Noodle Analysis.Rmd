@@ -1,0 +1,252 @@
+---
+title: "Instant Noodle Analysis"
+author: "by Reza Syahputra"
+date: "1/22/2022"
+output: 
+  html_document:
+    css: assets/style.css
+    theme: cosmo
+    highlight: tango
+    toc: true
+    number_sections: true
+    toc_float:
+      collapsed: true
+    df_print: paged
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Overview
+
+Did you know? That Instant Noodle invented by **Momofuku Ando of Nissin Foods** with the brand name **Chikin Ramen**. Ando establishing the entire process and make this product ready to eat just in two-minutes by adding boiling water. And this inovation became an instant populer. Now many food industry from each country have various taste and become favourite many people around the world. which one do you like?
+
+# Data Preparation
+
+## Instant Noodles Around The World
+
+The data used in this analysis is **The big list** data from [**The Ramen Rater**](https://www.theramenrater.com/resources-2/the-list/#google_vignette) guide to the world of instant noodle, since 2002. This data consist of all varioes instant noodle around the world, and the rating based on ramen rater preferences not on sales popularity.
+
+-   Install Necessary Libraries
+
+```{r message=FALSE}
+library(dplyr)
+library(ggplot2)
+library(plotly)
+library(glue)
+library(highcharter)
+library(wordcloud2)
+```
+
+> please make sure that dataset in the same working directory as this file RMD
+
+```{R get data}
+library(readxl)
+main_ramen <- read_excel("data_input/Ramen_rating_3950.xlsx", sheet = "Reviewed")
+```
+
+## Inspect Data
+
+this step will inspect and prepare the dataset before analysis.
+
+-   Show data
+
+```{r}
+main_ramen
+```
+
+from information above show that data consist of **3950** rows and **7** columns
+
+-   Drop **T** and rename 'Review #' Colum
+
+```{r}
+main_ramen <- subset(main_ramen, select = -c(T))
+names(main_ramen)[names(main_ramen) == "Review #"] <- "Review_ID"
+```
+
+-   Col Types
+
+```{r}
+str(main_ramen)
+```
+
+there are several columns that have a wrong type, that is "Brand", "Style" and "Country" which should be a Factor. Stars which should be a Numeric.
+
+-   Convert Col Types
+
+```{r}
+# Factor Column
+col_factor <- c("Brand", "Style", "Country")
+main_ramen[, col_factor] <- lapply(main_ramen[, col_factor], as.factor)
+
+# Numeric Column
+main_ramen$Stars <- as.numeric(main_ramen$Stars)
+str(main_ramen)
+```
+
+from structure check show that type of several columns already appropiate
+
+-   Missing Value Checking
+
+```{r}
+colSums(is.na(main_ramen))
+```
+
+from checking above show that Stars columns contain 12 missing value, and will handle using `na.omit()` to dealing with missing value
+
+```{r}
+main_ramen <- na.omit(main_ramen)
+colSums(is.na(main_ramen))
+```
+
+Voila, missing value is gone
+
+# Data Analysis
+
+This step contain some of data manipulation and insight from ramen data in the world using data visualization.
+
+## Top 10 Brand Based on Variety
+
+sometimes we need to know `Top 10 ramen brand` based on `Variety`, this happens because sometimes we are curious how many varieties of ramen from each brand which can we taste.
+
+```{r}
+top_brand <- main_ramen %>%
+  count(Brand) %>% 
+  arrange(desc(n))
+
+top_brand_plot <- ggplot(top_brand[1:10, ]) +
+  aes(x = n,
+      y = reorder(Brand, n),
+      fill = Brand,
+      text = glue("Frequency: {n}")) +
+  geom_col() +
+  labs(title = "Top 10 Ramen Brand From Variety",
+       x = NULL,
+       y = NULL) +
+  theme_minimal() +
+  theme(legend.position = "none")
+
+ggplotly(top_brand_plot, tooltip = "text") %>%
+  config(displayModeBar = T)
+```
+
+**Insight** \> Brand **Nissin** be on top ranks with the highest number of Variety with a total 502 Variety around the world \> Our Brand **Indomie** be on 9th ranks with a total 59 Variety, it is not bad because our brand can compete with other brand in the world
+
+## Top 10 Country of Ramen Producer by Variety
+
+Did you know? which country that be a **Top Ramen Producer** in the world? let's find out
+
+```{r}
+top_country <- main_ramen %>% 
+  group_by(Country) %>% 
+  count(Country) %>% 
+  arrange(desc(n))
+
+top_country_plot <- ggplot(top_country[1:10, ]) +
+  aes(x = n,
+      y = reorder(Country, n),
+      fill = Country,
+      text = glue("Frequency: {n}")) +
+  geom_col() +
+  labs(title = "Top 10 Country of Ramen Producer From Variety",
+       x = NULL,
+       y = NULL) +
+  theme_minimal() +
+  theme(legend.position = "none")
+
+ggplotly(top_country_plot, tooltip = "text") %>%
+  config(displayModeBar = T)
+```
+
+**Insight** \> Country **Japan** be on top ranks with the highest number of Ramen Produsen with a total 741 Variety around the world \> And our Country **Indonesia** be on 9th rank with a total 167 Variety.
+
+## Lets Explore Ramen in Indonesia
+
+```{r}
+country_distribution <- main_ramen %>% 
+  count(Country) %>% 
+  arrange(desc(n))
+
+country_distribution[1:10, ] %>% 
+  hchart(
+    "treemap", hcaes(x= Country, value = n, color = n)
+    ) %>% 
+  hc_title(text = "Country Distribution",
+    margin = 20,
+    align = "left",
+    style = list(useHTML = TRUE)) %>% 
+  hc_colorAxis(stops = color_stops(colors = viridis::inferno(10)))
+```
+
+# Explore Indonesia
+
+After finding out some of the countries with the most variety of brands, and the countries with the most numbers, let's explore more about Indonesia.
+
+First, let's find out what brands are there in Indonesia?
+
+```{r}
+indonesia <- main_ramen[main_ramen$Country=="Indonesia", ]
+idr_brand <- indonesia %>% 
+  group_by(Brand) %>% 
+  count(Brand) %>% 
+  arrange(desc(n))
+
+wordcloud2(data=idr_brand, 
+           size=3.0, 
+           color='random-dark',
+           minRotation = 0, 
+           maxRotation = 0,
+           rotateRatio = 1)
+```
+
+> Is there your favorite brand? Curious about the ratings for each brand?
+
+```{r}
+brand_stars <- aggregate(Stars ~ Brand, data = indonesia, FUN = mean)
+brand_stars <- brand_stars[order(brand_stars$Stars, decreasing = T), ]
+
+brand_stars_plot <- ggplot(brand_stars[1:10,]) +
+  aes(x = Stars,
+      y = reorder(Brand, Stars),
+      fill = Brand,
+      text = glue("Stars: {Stars}")) +
+  geom_col() +
+  labs(title = "Average Stars for Each Brand",
+       x = NULL,
+       y = NULL) +
+  theme_minimal() +
+  theme(legend.position = "none")
+
+ggplotly(brand_stars_plot, tooltip = "text") %>%
+  config(displayModeBar = T)
+
+```
+
+# Conclusion
+
+From the exploration carried out, Japan as the country that invented instant noodles still ranks first with the most instant noodle makers and also the most variations, while Indonesia ranks 9. And the Lemonilo brand is the brand with the best average rating among other brands.
+
+Disclaimer: This analysis is based on a dataset from [**Ramen Rater**](https://www.theramenrater.com/resources-2/the-list/#google_vignette) which is an assessment by preference and this publication was analyzed on January 21, 2022 which may no longer be relevant to the latest data at this time.
+
+```{r}
+agg_country <- aggregate(Stars ~ Country, data = main_ramen, FUN = mean)
+agg_country <- agg_country[order(agg_country$Stars, decreasing = T), ]
+agg_country <- agg_country[2:11, ]
+
+country_plot <- ggplot(agg_country) +
+  aes(x = Stars,
+      y = reorder(Country, Stars),
+      fill = Country,
+      text = glue("Stars: {Stars}")) +
+  geom_col() +
+  labs(title = "Average Stars for Each Country",
+       x = NULL,
+       y = NULL) +
+  theme_minimal() +
+  theme(legend.position = "none")
+
+ggplotly(country_plot, tooltip = "text") %>%
+  config(displayModeBar = T)
+```
+
