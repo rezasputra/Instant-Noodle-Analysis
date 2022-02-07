@@ -1,14 +1,3 @@
----
-title: "README"
-author: "by Reza Syahputra"
-date: "2/7/2022"
-output: html_document
----
-
-```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
-```
-
 # Publications Overview
 
 Did you know? That Instant Noodle invented by **Momofuku Ando of Nissin Foods** with the brand name **Chikin Ramen**. Ando establishing the entire process and make this product ready to eat just in two-minutes by adding boiling water. And this inovation became an instant populer. Now many food industry from each country have various taste and become favourite many people around the world. which one do you like?
